@@ -6,13 +6,14 @@ from platform import system
 import http.server
 import socketserver
 
-# Uptime server for Render
+# ──────────────────────────────────────────────────────────
+# ✅ 1. Simple uptime server (Render-compatible)
 class MyHandler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
-        self.send_header('Content-type', 'text/plain')
+        self.send_header('Content-type', 'text/plain; charset=utf-8')
         self.end_headers()
-        self.wfile.write(b"✅ Facebook Comment Bot Running...")
+        self.wfile.write("✅ Facebook Comment Bot Running...".encode('utf-8'))
 
 def execute_server():
     PORT = 4000
@@ -20,21 +21,19 @@ def execute_server():
         print(f"[🌐] Server running at http://localhost:{PORT}")
         httpd.serve_forever()
 
-# Clear console
+# ──────────────────────────────────────────────────────────
+# ✅ 2. Utility functions
 def clear_console():
     os.system('cls' if system() == 'Windows' else 'clear')
 
-# Print line
 def line():
     print('\033[37m' + '•' + '─' * 57 + '•')
 
-# Extract post ID from link
 def extract_post_id(link):
     import re
     match = re.search(r'/posts/(\d+)', link) or re.search(r'story_fbid=(\d+)', link)
     return match.group(1) if match else link.strip()
 
-# Get profile name from token
 def get_name(token):
     try:
         data = requests.get(f'https://graph.facebook.com/v17.0/me?access_token={token}').json()
@@ -42,7 +41,8 @@ def get_name(token):
     except:
         return "Error"
 
-# Main comment function
+# ──────────────────────────────────────────────────────────
+# ✅ 3. Main comment posting loop
 def post_comments():
     # Load config files
     with open('token.txt', 'r') as f:
@@ -91,7 +91,8 @@ def post_comments():
             print(f"[⚠️] Error: {e}")
             line()
 
-# MAIN
+# ──────────────────────────────────────────────────────────
+# ✅ 4. Entry Point
 def main():
     threading.Thread(target=execute_server).start()
     post_comments()
