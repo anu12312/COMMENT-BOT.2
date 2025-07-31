@@ -4,11 +4,12 @@ import time
 import random
 
 # ---- HELPER FUNCTIONS ----
-def get_numeric_post_id(post_url):
+def get_numeric_post_id(post_url, token):
     try:
-        print("🔍 Extracting numeric post ID from URL...")
-        res = requests.get(f"https://graph.facebook.com/?id={post_url}")
+        print("🔍 Extracting numeric post ID using token...")
+        res = requests.get(f"https://graph.facebook.com/?id={post_url}&access_token={token}")
         data = res.json()
+        # Optional: print(data) for debug
         return data["og_object"]["id"]
     except Exception as e:
         print(f"❌ Error extracting post ID: {e}")
@@ -31,7 +32,7 @@ def load_file_lines(filename):
         with open(filename, "r", encoding="utf-8") as f:
             return [line.strip() for line in f if line.strip()]
     except:
-        print(f"⚠️ Missing or unreadable file: {filename}")
+        print(f"⚠️ File missing: {filename}")
         return []
 
 def load_single_line(filename):
@@ -39,21 +40,25 @@ def load_single_line(filename):
         with open(filename, "r", encoding="utf-8") as f:
             return f.read().strip()
     except:
-        print(f"⚠️ Missing or unreadable file: {filename}")
+        print(f"⚠️ File missing: {filename}")
         return ""
 
-# ---- LOAD DATA ----
+# ---- LOAD FILES ----
 tokens = load_file_lines("token.txt")
 comments = load_file_lines("comments.txt")
 haters = load_file_lines("hatersname.txt")
 post_url = load_single_line("postlink.txt")
 interval = int(load_single_line("time.txt") or 60)
 
-# ---- GET POST ID ----
-post_id = get_numeric_post_id(post_url)
+if not tokens:
+    print("❌ No tokens found. Exiting.")
+    exit()
+
+# ---- EXTRACT POST ID USING TOKEN ----
+post_id = get_numeric_post_id(post_url, tokens[0])
 
 if not post_id:
-    print("❌ Failed to extract post ID. Check the link or internet connection.")
+    print("❌ Failed to extract post ID. Check your post URL or token.")
     exit()
 
 print(f"✅ Post ID Extracted: {post_id}")
@@ -62,7 +67,7 @@ print("🚀 Auto Comment Bot Started...\n")
 # ---- MAIN LOOP ----
 while True:
     if not tokens or not comments:
-        print("⚠️ No tokens or comments found. Exiting.")
+        print("⚠️ Tokens or comments missing. Exiting.")
         break
 
     token = random.choice(tokens)
@@ -76,9 +81,9 @@ while True:
     success, response = comment_on_post(post_id, comment, token)
 
     if success:
-        print(f"✅ Success: Commented ✔️")
+        print(f"✅ Success: Comment posted!")
     else:
         print(f"❌ Failed: {response}")
 
-    print(f"⏳ Waiting {interval} sec...\n")
+    print(f"⏳ Waiting {interval} seconds...\n")
     time.sleep(interval)
