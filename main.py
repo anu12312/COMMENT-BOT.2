@@ -2,14 +2,17 @@ import requests
 import re
 import time
 import random
-import os
 
 # ---- HELPER FUNCTIONS ----
-def extract_post_id(post_url):
-    match = re.search(r'/posts/(\d+)', post_url)
-    if match:
-        return match.group(1)
-    return None
+def get_numeric_post_id(post_url):
+    try:
+        print("🔍 Extracting numeric post ID from URL...")
+        res = requests.get(f"https://graph.facebook.com/?id={post_url}")
+        data = res.json()
+        return data["og_object"]["id"]
+    except Exception as e:
+        print(f"❌ Error extracting post ID: {e}")
+        return None
 
 def comment_on_post(post_id, message, token):
     url = f"https://graph.facebook.com/v19.0/{post_id}/comments"
@@ -23,41 +26,43 @@ def comment_on_post(post_id, message, token):
     except Exception as e:
         return False, str(e)
 
-def safe_load(file):
+def load_file_lines(filename):
     try:
-        with open(file, "r", encoding="utf-8") as f:
+        with open(filename, "r", encoding="utf-8") as f:
             return [line.strip() for line in f if line.strip()]
-    except FileNotFoundError:
-        print(f"⚠️ File not found: {file}")
+    except:
+        print(f"⚠️ Missing or unreadable file: {filename}")
         return []
 
-def safe_load_single(file):
+def load_single_line(filename):
     try:
-        with open(file, "r", encoding="utf-8") as f:
+        with open(filename, "r", encoding="utf-8") as f:
             return f.read().strip()
-    except FileNotFoundError:
-        print(f"⚠️ File not found: {file}")
+    except:
+        print(f"⚠️ Missing or unreadable file: {filename}")
         return ""
 
 # ---- LOAD DATA ----
-tokens = safe_load("token.txt")
-comments = safe_load("comments.txt")
-haters = safe_load("hatersname.txt")
-post_url = safe_load_single("postlink.txt")
-interval = int(safe_load_single("time.txt") or 60)
+tokens = load_file_lines("token.txt")
+comments = load_file_lines("comments.txt")
+haters = load_file_lines("hatersname.txt")
+post_url = load_single_line("postlink.txt")
+interval = int(load_single_line("time.txt") or 60)
 
-post_id = extract_post_id(post_url)
+# ---- GET POST ID ----
+post_id = get_numeric_post_id(post_url)
 
 if not post_id:
-    print("❌ Invalid post link. Exiting.")
+    print("❌ Failed to extract post ID. Check the link or internet connection.")
     exit()
 
-print("🚀 Starting Facebook Auto Comment Bot...\n")
+print(f"✅ Post ID Extracted: {post_id}")
+print("🚀 Auto Comment Bot Started...\n")
 
 # ---- MAIN LOOP ----
 while True:
     if not tokens or not comments:
-        print("⚠️ Tokens or comments missing. Exiting.")
+        print("⚠️ No tokens or comments found. Exiting.")
         break
 
     token = random.choice(tokens)
@@ -66,14 +71,14 @@ while True:
     if "{hater}" in comment and haters:
         comment = comment.replace("{hater}", random.choice(haters))
 
-    print(f"➡️ Trying comment: {comment}")
+    print(f"➡️ Commenting: {comment}")
 
     success, response = comment_on_post(post_id, comment, token)
 
     if success:
-        print(f"✅ Commented: {comment}")
+        print(f"✅ Success: Commented ✔️")
     else:
         print(f"❌ Failed: {response}")
 
-    print(f"⏱ Waiting {interval} seconds...\n")
+    print(f"⏳ Waiting {interval} sec...\n")
     time.sleep(interval)
